@@ -1,0 +1,106 @@
+override	CPPFLAGS	+= --std=c++1z
+override	CPPFLAGS	+= -MMD -MP
+override	CPPFLAGS	+= -I./include
+override	CPPFLAGS	+= $(shell cat .cxxflags 2> /dev/null | xargs)
+
+ARFLAGS	:= $(ARFLAGS)c
+
+TAREGT_INCLUDE := include
+TAREGT_SOURCE := source
+TAREGT_LIB	:= lib
+LOCAL_TEMP	:= .
+LOCAL_DIST	:= .
+
+COPYRIGHT	:= COPYRIGHT
+
+PREFIX	:= $(DESTDIR)/usr/local
+INCDIR	:= $(PREFIX)/$(TAREGT_INCLUDE)
+LIBDIR	:= $(PREFIX)/$(TAREGT_LIB)
+TARGET_SRCDIR	:= $(PREFIX)/$(TAREGT_SOURCE)
+
+SRCDIR	:= ./source
+TEMPDIR	:= temp/$(LOCAL_TEMP)
+DISTDIR	:= out/$(LOCAL_DIST)
+ifeq ($(origin TARGET), undefined)
+TARGET	:= $(shell pwd | xargs basename).a
+endif
+OUT		:= $(DISTDIR)/$(TARGET)
+
+HEADERS	:= $(shell find -wholename "$(SRCDIR)/*.hpp" && find -wholename "$(SRCDIR)/*.h")
+INCLUDE	:= $(HEADERS:$(SRCDIR)/%=$(INCDIR)/%)
+INCDIRS	:= $(shell dirname $(INCLUDE))
+
+SOURCES	:= $(shell find -wholename "$(SRCDIR)/*.cpp")
+TARGET_SOURCES	:= $(SOURCES:$(SRCDIR)/%=$(TARGET_SRCDIR)/%)
+TARGET_SOURCES	+= $(INCLUDE:$(INCDIR)/%=$(TARGET_SRCDIR)/%)
+TARGET_SRCDIRS	:= $(shell dirname $(TARGET_SOURCES))
+
+OBJECTS	:= $(SOURCES:$(SRCDIR)/%.cpp=$(TEMPDIR)/%.o)
+OBJDIRS	:= $(shell dirname $(OBJECTS))
+DEPENDS	:= $(OBJECTS:.o=.d)
+
+
+$(OUT): $(OBJECTS) | $(DISTDIR)
+	$(AR) $(ARFLAGS) $@ $^
+
+$(TEMPDIR)/%.o: $(SRCDIR)/%.cpp | $(TEMPDIR)
+	@mkdir -p $(@D)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c $<
+
+$(TEMPDIR):
+	@mkdir -p $@
+
+$(DISTDIR):
+	@mkdir -p $@
+
+clean:
+	@rm $(DEPENDS) 2> /dev/null || true
+	@rm $(OBJECTS) 2> /dev/null || true
+	@rmdir -p -p $(OBJDIRS) 2> /dev/null || true
+	@echo Temporaries cleaned!
+
+distclean: clean
+	@rm $(OUT) 2> /dev/null || true
+	@rmdir -p $(DISTDIR) 2> /dev/null || true
+	@echo All clean!
+
+install_all: install install_source
+
+install: $(LIBDIR)/$(TARGET) $(INCLUDE)
+
+$(LIBDIR)/$(TARGET): $(OUT) | $(LIBDIR)
+	cp $< $@
+
+$(LIBDIR):
+	@mkdir -p $@
+
+$(INCDIR)/%.h: $(SRCDIR)/%.h $(COPYRIGHT)
+	@mkdir -p $(@D)
+	cat $(COPYRIGHT) >> $@ 2> /dev/null || true
+	cat $< >> $@
+
+$(INCDIR)/%.hpp: $(SRCDIR)/%.hpp $(COPYRIGHT)
+	@mkdir -p $(@D)
+	cat $(COPYRIGHT) >> $@ 2> /dev/null || true
+	cat $< >> $@
+
+install_source: $(TARGET_SOURCES)
+
+$(TARGET_SRCDIR)/%: $(SRCDIR)/% $(COPYRIGHT)
+	@mkdir -p $(@D)
+	cat $(COPYRIGHT) >> $@ 2> /dev/null || true
+	cat $< >> $@
+
+uninstall:
+	-rm $(INCLUDE)
+	@rmdir -p $(INCDIRS) 2> /dev/null || true
+	-rm $(LIBDIR)/$(TARGET)
+	@rmdir -p $(LIBDIR) 2> /dev/null || true
+	-rm $(TARGET_SOURCES)
+	@rmdir -p $(TARGET_SRCDIRS) 2> /dev/null || true
+	@echo Uninstall complete!
+
+-include $(DEPENDS)
+
+.PRECIOUS : $(OBJECTS)
+.PHONY : clean distclean uninstall
