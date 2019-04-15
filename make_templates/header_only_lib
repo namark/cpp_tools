@@ -1,5 +1,10 @@
 TAREGT_INCLUDE := include
-COPYRIGHT	:= COPYRIGHT
+
+ifneq ($(shell cat COPYRIGHT 2> /dev/null),)
+COPYRIGHT ?= COPYRIGHT
+else
+COPYRIGHT ?= /dev/null
+endif
 
 PREFIX	:= $(DESTDIR)/usr/local
 INCDIR	:= $(PREFIX)/$(TAREGT_INCLUDE)
