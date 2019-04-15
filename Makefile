@@ -71,7 +71,9 @@ $(BINDIR):
 
 uninstall:
 	-rm $(TARGET)
+	-rm $(INCLUDE)
 	@rmdir -p $(BINDIR) 2> /dev/null || true
+	@rmdir -p $(shell dirname $(INCLUDE)) 2> /dev/null || true
 	@echo Uninstall complete!
 
 -include $(DEPENDS)
