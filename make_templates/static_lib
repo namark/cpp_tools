@@ -1,15 +1,15 @@
-override	CPPFLAGS	+= --std=c++1z
+CPPFLAGS	+= --std=c++1z
 override	CPPFLAGS	+= -MMD -MP
 override	CPPFLAGS	+= -I./include
 override	CPPFLAGS	+= $(shell cat .cxxflags 2> /dev/null | xargs)
 
 ARFLAGS	:= $(ARFLAGS)c
 
-TAREGT_INCLUDE := include
-TAREGT_SOURCE := source
-TAREGT_LIB	:= lib
-#LOCAL_TEMP	
-#LOCAL_DIST	
+INSTALL_INCLUDE := include
+INSTALL_SOURCE := source
+INSTALL_LIB	:= lib
+#LOCAL_TEMP
+#LOCAL_DIST
 
 ifneq ($(shell cat COPYRIGHT 2> /dev/null),)
 COPYRIGHT ?= COPYRIGHT
@@ -18,18 +18,19 @@ COPYRIGHT ?= /dev/null
 endif
 
 PREFIX	:= $(DESTDIR)/usr/local
-INCDIR	:= $(PREFIX)/$(TAREGT_INCLUDE)
-LIBDIR	:= $(PREFIX)/$(TAREGT_LIB)
-TARGET_SRCDIR	:= $(PREFIX)/$(TAREGT_SOURCE)
+INCDIR	:= $(PREFIX)/$(INSTALL_INCLUDE)
+LIBDIR	:= $(PREFIX)/$(INSTALL_LIB)
+INSTALL_SRCDIR	:= $(PREFIX)/$(INSTALL_SOURCE)
 
-SRCDIR	:= ./source
+SRCDIR	?= ./source
+SRCEXT	?= .cpp
 
 TEMPDIR	:= temp
 ifneq ($(LOCAL_TEMP),)
 TEMPDIR	:= $(TEMPDIR)/$(LOCAL_TEMP)
 endif
 
-DISTDIR	:= out/$(LOCAL_DIST)
+DISTDIR	:= out
 ifneq ($(LOCAL_DIST),)
 DISTDIR	:= $(DISTDIR)/$(LOCAL_DIST)
 endif
@@ -40,24 +41,28 @@ endif
 
 OUT		:= $(DISTDIR)/$(TARGET)
 
+ifeq ($(origin HEADERS), undefined)
 HEADERS	:= $(shell find -wholename "$(SRCDIR)/*.hpp" && find -wholename "$(SRCDIR)/*.h")
+endif
 INCLUDE	:= $(HEADERS:$(SRCDIR)/%=$(INCDIR)/%)
 INCDIRS	:= $(shell dirname $(INCLUDE))
 
-SOURCES	:= $(shell find -wholename "$(SRCDIR)/*.cpp")
-TARGET_SOURCES	:= $(SOURCES:$(SRCDIR)/%=$(TARGET_SRCDIR)/%)
-TARGET_SOURCES	+= $(INCLUDE:$(INCDIR)/%=$(TARGET_SRCDIR)/%)
-TARGET_SRCDIRS	:= $(shell dirname $(TARGET_SOURCES))
+ifeq ($(origin SOURCES), undefined)
+SOURCES	:= $(shell find -wholename "$(SRCDIR)/*$(SRCEXT)")
+endif
 
-OBJECTS	:= $(SOURCES:$(SRCDIR)/%.cpp=$(TEMPDIR)/%.o)
+OBJECTS	:= $(SOURCES:$(SRCDIR)/%$(SRCEXT)=$(TEMPDIR)/%.o)
 OBJDIRS	:= $(shell dirname $(OBJECTS))
 DEPENDS	:= $(OBJECTS:.o=.d)
 
+INSTALL_SOURCES	:= $(SOURCES:$(SRCDIR)/%=$(INSTALL_SRCDIR)/%)
+INSTALL_SOURCES	+= $(INCLUDE:$(INCDIR)/%=$(INSTALL_SRCDIR)/%)
+INSTALL_SRCDIRS	:= $(shell dirname $(INSTALL_SOURCES))
 
 $(OUT): $(OBJECTS) | $(DISTDIR)
 	$(AR) $(ARFLAGS) $@ $^
 
-$(TEMPDIR)/%.o: $(SRCDIR)/%.cpp | $(TEMPDIR)
+$(TEMPDIR)/%.o: $(SRCDIR)/%$(SRCEXT) | $(TEMPDIR)
 	@mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c $<
 
@@ -99,9 +104,9 @@ $(INCDIR)/%.hpp: $(SRCDIR)/%.hpp $(COPYRIGHT)
 	cat $(COPYRIGHT) >> $@ 2> /dev/null || true
 	cat $< >> $@
 
-install_source: $(TARGET_SOURCES)
+install_source: $(INSTALL_SOURCES)
 
-$(TARGET_SRCDIR)/%: $(SRCDIR)/% $(COPYRIGHT)
+$(INSTALL_SRCDIR)/%: $(SRCDIR)/% $(COPYRIGHT)
 	@mkdir -p $(@D)
 	cat $(COPYRIGHT) >> $@ 2> /dev/null || true
 	cat $< >> $@
@@ -111,8 +116,8 @@ uninstall:
 	@rmdir -p $(INCDIRS) 2> /dev/null || true
 	-rm $(LIBDIR)/$(TARGET)
 	@rmdir -p $(LIBDIR) 2> /dev/null || true
-	-rm $(TARGET_SOURCES)
-	@rmdir -p $(TARGET_SRCDIRS) 2> /dev/null || true
+	-rm $(INSTALL_SOURCES)
+	@rmdir -p $(INSTALL_SRCDIRS) 2> /dev/null || true
 	@echo Uninstall complete!
 
 -include $(DEPENDS)

@@ -1,4 +1,4 @@
-TAREGT_INCLUDE := include
+INSTALL_INCLUDE := include
 
 ifneq ($(shell cat COPYRIGHT 2> /dev/null),)
 COPYRIGHT ?= COPYRIGHT
@@ -7,7 +7,7 @@ COPYRIGHT ?= /dev/null
 endif
 
 PREFIX	:= $(DESTDIR)/usr/local
-INCDIR	:= $(PREFIX)/$(TAREGT_INCLUDE)
+INCDIR	:= $(PREFIX)/$(INSTALL_INCLUDE)
 
 SRCDIR	:= ./source
 HEADERS	:= $(shell find -wholename "$(SRCDIR)/*.hpp" && find -wholename "$(SRCDIR)/*.h")

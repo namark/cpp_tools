@@ -1,9 +1,9 @@
 
-override CPPFLAGS	+= --std=c++1z
+CPPFLAGS	+= --std=c++1z
 override CPPFLAGS	+= -MMD -MP
 override CPPFLAGS	+= -I./include
 override CPPFLAGS	+= $(shell cat .cxxflags 2> /dev/null | xargs)
-override LDLIBS		+= -lstdc++fs
+LDLIBS		+= -lstdc++fs
 
 ifneq ($(shell cat COPYRIGHT 2> /dev/null),)
 COPYRIGHT ?= COPYRIGHT
