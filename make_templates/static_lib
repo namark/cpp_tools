@@ -1,4 +1,6 @@
-CPPFLAGS	+= --std=c++1z
+CPPSTD		?= --std=c++1z
+CPPFLAGS	+= $(CPPSTD)
+
 override	CPPFLAGS	+= -MMD -MP
 override	CPPFLAGS	+= -I./include
 override	CPPFLAGS	+= $(shell cat .cxxflags 2> /dev/null | xargs)
@@ -44,7 +46,7 @@ OUT		:= $(DISTDIR)/$(TARGET)
 ifeq ($(origin HEADERS), undefined)
 HEADERS	:= $(shell find -wholename "$(SRCDIR)/*.hpp" && find -wholename "$(SRCDIR)/*.h")
 endif
-INCLUDE	:= $(HEADERS:$(SRCDIR)/%=$(INCDIR)/%)
+INCLUDE	:= $(ADD_INCLUDE:%=$(INCDIR)/%) $(HEADERS:$(SRCDIR)/%=$(INCDIR)/%)
 INCDIRS	:= $(shell dirname $(INCLUDE))
 
 ifeq ($(origin SOURCES), undefined)
