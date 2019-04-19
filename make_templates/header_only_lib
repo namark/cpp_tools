@@ -2,6 +2,7 @@ INSTALL_INCLUDE := include
 
 ifneq ($(shell cat COPYRIGHT 2> /dev/null),)
 COPYRIGHT ?= COPYRIGHT
+COPYRIGHT_DEP = COPYRIGHT
 else
 COPYRIGHT ?= /dev/null
 endif
@@ -20,14 +21,14 @@ default:
 install: $(INCLUDE)
 	@echo Install complete!
 
-$(INCDIR)/%.h: $(SRCDIR)/%.h $(COPYRIGHT)
+$(INCDIR)/%.h: $(SRCDIR)/%.h $(COPYRIGHT_DEP)
 	@mkdir -p $(@D)
-	cat $(COPYRIGHT) >> $@ 2> /dev/null || true
+	cat $(COPYRIGHT) >> $@ 
 	cat $< >> $@
 
-$(INCDIR)/%.hpp: $(SRCDIR)/%.hpp $(COPYRIGHT)
+$(INCDIR)/%.hpp: $(SRCDIR)/%.hpp $(COPYRIGHT_DEP)
 	@mkdir -p $(@D)
-	cat $(COPYRIGHT) >> $@ 2> /dev/null || true
+	cat $(COPYRIGHT) >> $@ 
 	cat $< >> $@
 
 uninstall:
