@@ -99,19 +99,19 @@ $(LIBDIR):
 
 $(INCDIR)/%.h: $(SRCDIR)/%.h $(COPYRIGHT_DEP)
 	@mkdir -p $(@D)
-	cat $(COPYRIGHT) >> $@
+	cat $(COPYRIGHT) > $@
 	cat $< >> $@
 
 $(INCDIR)/%.hpp: $(SRCDIR)/%.hpp $(COPYRIGHT_DEP)
 	@mkdir -p $(@D)
-	cat $(COPYRIGHT) >> $@
+	cat $(COPYRIGHT) > $@
 	cat $< >> $@
 
 install_source: $(INSTALL_SOURCES)
 
 $(INSTALL_SRCDIR)/%: $(SRCDIR)/% $(COPYRIGHT_DEP)
 	@mkdir -p $(@D)
-	cat $(COPYRIGHT) >> $@
+	cat $(COPYRIGHT) > $@
 	cat $< >> $@
 
 uninstall:
