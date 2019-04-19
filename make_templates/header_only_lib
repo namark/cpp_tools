@@ -1,4 +1,5 @@
 INSTALL_INCLUDE := include
+INSTALL_SOURCE := source
 
 ifneq ($(shell cat COPYRIGHT 2> /dev/null),)
 COPYRIGHT ?= COPYRIGHT
@@ -15,26 +16,47 @@ HEADERS	:= $(shell find -wholename "$(SRCDIR)/*.hpp" && find -wholename "$(SRCDI
 INCLUDE	:= $(HEADERS:$(SRCDIR)/%=$(INCDIR)/%)
 INCDIRS	:= $(shell dirname $(INCLUDE))
 
+INSTALL_SRCDIR	:= $(PREFIX)/$(INSTALL_SOURCE)
+INSTALL_SOURCES	:= $(INCLUDE:$(INCDIR)/%=$(INSTALL_SRCDIR)/%)
+INSTALL_SRCDIRS	:= $(shell dirname $(INSTALL_SOURCES))
+
 default:
 	@echo This is a pure header library, so there is nothing to build. You can still install/uninstall or test.
+
+install_all: install install_source
 
 install: $(INCLUDE)
 	@echo Install complete!
 
 $(INCDIR)/%.h: $(SRCDIR)/%.h $(COPYRIGHT_DEP)
 	@mkdir -p $(@D)
-	cat $(COPYRIGHT) >> $@ 
+	cat $(COPYRIGHT) >> $@
 	cat $< >> $@
 
 $(INCDIR)/%.hpp: $(SRCDIR)/%.hpp $(COPYRIGHT_DEP)
 	@mkdir -p $(@D)
-	cat $(COPYRIGHT) >> $@ 
+	cat $(COPYRIGHT) >> $@
+	cat $< >> $@
+
+install_source: $(INSTALL_SOURCES)
+
+$(INSTALL_SRCDIR)/%: $(SRCDIR)/% $(COPYRIGHT_DEP)
+	@mkdir -p $(@D)
+	cat $(COPYRIGHT) >> $@
 	cat $< >> $@
 
 uninstall:
 	-rm $(INCLUDE)
 	@rmdir -p $(INCDIRS) 2> /dev/null || true
-	@echo Uninstall complete!
+	@echo Includes uninstalled!
+
+uninstall_source:
+	-rm $(INSTALL_SOURCES)
+	@rmdir -p $(INSTALL_SRCDIRS) 2> /dev/null || true
+	@echo Source code uninstalled!
+
+uninstall_all: uninstall uninstall_source
+	@echo Everything uninstalled!
 
 TESTMAKE = +@$(MAKE) --no-print-directory -C unit_tests/
 
