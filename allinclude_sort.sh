@@ -1,2 +1,2 @@
 #!/bin/sh
-allinclude $1 | grep creating | sed 's/creating: //' | xargs -I{} sort -o {} {}
+allinclude "$@" | grep creating | sed 's/creating: //' | xargs -I{} sort -o {} {}

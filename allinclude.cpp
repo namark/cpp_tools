@@ -6,11 +6,15 @@
 #include <exception>
 
 #include "simple/file.hpp"
+#include "simple/support/algorithm.hpp"
 
 namespace fs = std::filesystem;
 using namespace simple::file;
+using namespace simple::support;
 
-void generate_allinclude(fs::path directory)
+const char * exclude_filename = ".allinclude_exclude";
+
+void generate_allinclude(fs::path directory, const std::vector<fs::path>& excluded_headers = {})
 {
 	std::cout << "generating allinclude files under: " << directory << '\n';
 	auto i = fs::directory_iterator(directory);
@@ -35,7 +39,8 @@ void generate_allinclude(fs::path directory)
 					include = entry.path();
 				}
 
-				if(!include.empty())
+				if(!include.empty() &&
+					none_of(excluded_headers, [&](auto& p){return equivalent(p, include);}))
 				{
 					auto relative = fs::relative(include, directory);
 					std::cout << "including: " << entry << " as " << relative << '\n';
@@ -46,7 +51,7 @@ void generate_allinclude(fs::path directory)
 		}
 
 	for(auto&& target : next_targets)
-		generate_allinclude(target);
+		generate_allinclude(target, excluded_headers);
 }
 
 void clear_allinclude(fs::path directory)
@@ -74,6 +79,7 @@ void clear_allinclude(fs::path directory)
 
 int main(int argc, char const* argv[]) try
 {
+
 	fs::path target = fs::current_path();
 	if(argc > 1)
 		target = argv[1];
@@ -84,9 +90,21 @@ int main(int argc, char const* argv[]) try
 		return -1;
 	}
 
+	std::vector<fs::path> excluded_headers;
+	for(int i = 2; i < argc; ++i)
+		excluded_headers.emplace_back(argv[i]);
+
+	if(fs::exists(exclude_filename))
+	{
+		auto exclude_file = ropen(exclude_filename);
+		string line;
+		while(std::getline(exclude_file, line))
+			excluded_headers.emplace_back(line);
+	}
+
 	clear_allinclude(target);
 	std::cout << '\n';
-	generate_allinclude(target);
+	generate_allinclude(target, excluded_headers);
 }
 catch(const std::exception& ex)
 {
