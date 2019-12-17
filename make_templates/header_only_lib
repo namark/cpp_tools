@@ -70,7 +70,7 @@ test-cleanrun:
 	@$(TESTMAKE) cleanrun
 	@$(TESTMAKE) run
 
-test-all: testclean test
+test-all: test-clean test
 
 clean: test-clean
 
