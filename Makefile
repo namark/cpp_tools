@@ -57,7 +57,7 @@ install: $(TARGET) $(INCLUDE)
 
 $(INCDIR)/make_templates/%: ./make_templates/% $(COPYRIGHT)
 	@mkdir -p $(@D)
-	cat $(COPYRIGHT) >> $@ 2> /dev/null || true
+	cat $(COPYRIGHT) > $@ 2> /dev/null || true
 	cat $< >> $@
 
 $(BINDIR)/%: $(DISTDIR)/% | $(BINDIR)
