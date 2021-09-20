@@ -1,10 +1,10 @@
 #if 1 /*
 #	namark/cpp_tools - various c++ project setup tools
 #	https://notabug.org/namark/cpp_tools
-#	https://gitlab.com/namark/cpp_tools
-#	https://github.com/namark/cpp_tools
+#	https://git.sr.ht/~namark/cpp_tools
+#	https://git.qoto.org/namark/cpp_tools
 #
-#	Copyright (C) 2018-2019 respective authors/constibutors
+#	Copyright (C) 2018-2021 respective authors/constibutors
 #
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
