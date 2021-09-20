@@ -1,0 +1,125 @@
+CPPSTD		?= --std=c++1z
+CPPFLAGS	+= $(CPPSTD)
+
+SRCDIR	?= ./source
+SRCEXT	?= .cpp
+
+override CPPFLAGS	+= -MMD -MP
+override CPPFLAGS	+= $(shell cat .cxxflags 2> /dev/null | xargs)
+override CPPFLAGS	+= -I./include -I$(SRCDIR)
+override LDFLAGS	+= $(shell cat .ldflags 2> /dev/null | xargs)
+override LDFLAGS	+= -L./lib
+override LDLIBS		+= $(shell cat .ldlibs 2> /dev/null | xargs)
+
+override LOCALIB	+= $(wildcard lib/*.a)
+
+INSTALL_BIN ?= bin
+INSTALL_SOURCE ?= source
+#LOCAL_TEMP
+#LOCAL_DIST
+
+ifneq ($(shell cat COPYRIGHT 2> /dev/null),)
+COPYRIGHT ?= COPYRIGHT
+COPYRIGHT_DEP = COPYRIGHT
+else
+COPYRIGHT ?= /dev/null
+endif
+
+PREFIX	?= $(DESTDIR)/usr/local
+BINDIR	:= $(PREFIX)/$(INSTALL_BIN)
+INSTALL_SRCDIR	:= $(PREFIX)/$(INSTALL_SOURCE)
+
+
+TEMPDIR	:= temp
+ifneq ($(LOCAL_TEMP),)
+TEMPDIR	:= $(TEMPDIR)/$(LOCAL_TEMP)
+endif
+
+DISTDIR	:= out
+ifneq ($(LOCAL_DIST),)
+DISTDIR	:= $(DISTDIR)/$(LOCAL_DIST)
+endif
+
+
+ifeq ($(origin TARGET), undefined)
+TARGET	:= $(shell pwd | xargs basename)
+endif
+
+OUT		:= $(DISTDIR)/$(TARGET)
+
+ifeq ($(origin HEADERS), undefined)
+HEADERS	:= $(shell find -wholename "$(SRCDIR)/*.hpp" && find -wholename "$(SRCDIR)/*.h")
+endif
+
+ifeq ($(origin SOURCES), undefined)
+SOURCES	:= $(shell find -wholename "$(SRCDIR)/*$(SRCEXT)")
+endif
+
+OBJECTS	:= $(SOURCES:$(SRCDIR)/%$(SRCEXT)=$(TEMPDIR)/%.o)
+OBJDIRS	:= $(shell dirname $(OBJECTS))
+DEPENDS	:= $(OBJECTS:.o=.d)
+
+INSTALL_SOURCES	:= $(SOURCES:$(SRCDIR)/%=$(INSTALL_SRCDIR)/%)
+INSTALL_SOURCES	+= $(HEADERS:$(SRCDIR)/%=$(INSTALL_SRCDIR)/%)
+INSTALL_SRCDIRS	:= $(shell dirname $(INSTALL_SOURCES))
+
+$(OUT): $(OBJECTS) $(LOCALIB) | $(DISTDIR)
+	$(CXX) $(LDFLAGS) $(OBJECTS) $(LOCALIB) $(LDLIBS) -o $@
+
+$(TEMPDIR)/%.o: $(SRCDIR)/%$(SRCEXT) | $(TEMPDIR)
+	@mkdir -p $(@D)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c $<
+
+$(TEMPDIR):
+	@mkdir -p $@
+
+$(DISTDIR):
+	@mkdir -p $@
+
+clean:
+	@rm $(DEPENDS) 2> /dev/null || true
+	@rm $(OBJECTS) 2> /dev/null || true
+	@rmdir -p $(OBJDIRS) 2> /dev/null || true
+	@rmdir -p $(TEMPDIR) 2> /dev/null || true
+	@echo Temporaries cleaned!
+
+distclean: clean
+	@rm $(OUT) 2> /dev/null || true
+	@rmdir -p $(DISTDIR) 2> /dev/null || true
+	@echo All clean!
+
+install_all: install install_source
+
+install: $(BINDIR)/$(TARGET)
+
+$(BINDIR)/$(TARGET): $(OUT) | $(BINDIR)
+	install --strip $< $@
+
+$(BINDIR):
+	@mkdir -p $@
+
+install_source: $(INSTALL_SOURCES)
+
+$(INSTALL_SRCDIR)/%: $(SRCDIR)/% $(COPYRIGHT_DEP)
+	@mkdir -p $(@D)
+	cat $(COPYRIGHT) > $@
+	cat $< >> $@
+
+uninstall:
+	-rm $(BINDIR)/$(TARGET)
+	@rmdir -p $(BINDIR) 2> /dev/null || true
+	@echo Binary uninstalled!
+
+uninstall_source:
+	-rm $(INSTALL_SOURCES)
+	@rmdir -p $(INSTALL_SRCDIRS) 2> /dev/null || true
+	@echo Source code uninstalled!
+
+uninstall_all: uninstall uninstall_source
+	@echo Everything uninstalled!
+
+
+-include $(DEPENDS)
+
+.PRECIOUS : $(OBJECTS)
+.PHONY : clean distclean uninstall uninstall_source uninstall_all
