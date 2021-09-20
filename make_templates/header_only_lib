@@ -1,5 +1,5 @@
-INSTALL_INCLUDE := include
-INSTALL_SOURCE := source
+INSTALL_INCLUDE ?= include
+INSTALL_SOURCE ?= source
 
 ifneq ($(shell cat COPYRIGHT 2> /dev/null),)
 COPYRIGHT ?= COPYRIGHT
@@ -8,10 +8,10 @@ else
 COPYRIGHT ?= /dev/null
 endif
 
-PREFIX	:= $(DESTDIR)/usr/local
+PREFIX	?= $(DESTDIR)/usr/local
 INCDIR	:= $(PREFIX)/$(INSTALL_INCLUDE)
 
-SRCDIR	:= ./source
+SRCDIR	?= ./source
 HEADERS	:= $(shell find -wholename "$(SRCDIR)/*.hpp" && find -wholename "$(SRCDIR)/*.h")
 INCLUDE	:= $(HEADERS:$(SRCDIR)/%=$(INCDIR)/%)
 INCDIRS	:= $(shell dirname $(INCLUDE))
