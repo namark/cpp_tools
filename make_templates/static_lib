@@ -1,15 +1,19 @@
 CPPSTD		?= --std=c++1z
 CPPFLAGS	+= $(CPPSTD)
 
+SRCDIR	?= ./source
+SRCEXT	?= .cpp
+#SHARED
+
 override	CPPFLAGS	+= -MMD -MP
-override	CPPFLAGS	+= -I./include
+override	CPPFLAGS	+= -I./include -I$(SRCDIR)
 override	CPPFLAGS	+= $(shell cat .cxxflags 2> /dev/null | xargs)
 
 ARFLAGS	:= $(ARFLAGS)c
 
-INSTALL_INCLUDE := include
-INSTALL_SOURCE := source
-INSTALL_LIB	:= lib
+INSTALL_INCLUDE ?= include
+INSTALL_SOURCE ?= source
+INSTALL_LIB	?= lib
 #LOCAL_TEMP
 #LOCAL_DIST
 
@@ -20,13 +24,11 @@ else
 COPYRIGHT ?= /dev/null
 endif
 
-PREFIX	:= $(DESTDIR)/usr/local
+PREFIX	?= $(DESTDIR)/usr/local
 INCDIR	:= $(PREFIX)/$(INSTALL_INCLUDE)
 LIBDIR	:= $(PREFIX)/$(INSTALL_LIB)
 INSTALL_SRCDIR	:= $(PREFIX)/$(INSTALL_SOURCE)
 
-SRCDIR	?= ./source
-SRCEXT	?= .cpp
 
 TEMPDIR	:= temp
 ifneq ($(LOCAL_TEMP),)
@@ -38,8 +40,23 @@ ifneq ($(LOCAL_DIST),)
 DISTDIR	:= $(DISTDIR)/$(LOCAL_DIST)
 endif
 
+ifneq ($(SHARED),)
+LIBEXT	:= .so
+override LOCALIB	+= $(wildcard lib/*.a)
+override LDFLAGS	+= --shared
+override LDFLAGS	+= $(shell cat .ldflags 2> /dev/null | xargs)
+override LDFLAGS	+= -L./lib
+override LDLIBS		+= $(shell cat .ldlibs 2> /dev/null | xargs)
+else
+LIBEXT	:= .a
+endif
+
+ifeq ($(origin NAME), undefined)
+NAME	:= $(shell pwd | xargs basename)
+endif
+
 ifeq ($(origin TARGET), undefined)
-TARGET	:= $(shell pwd | xargs basename).a
+TARGET	:= $(NAME)$(LIBEXT)
 endif
 
 OUT		:= $(DISTDIR)/$(TARGET)
@@ -48,7 +65,7 @@ ifeq ($(origin HEADERS), undefined)
 HEADERS	:= $(shell find -wholename "$(SRCDIR)/*.hpp" && find -wholename "$(SRCDIR)/*.h")
 endif
 INCLUDE	:= $(ADD_INCLUDE:%=$(INCDIR)/%) $(HEADERS:$(SRCDIR)/%=$(INCDIR)/%)
-INCDIRS	:= $(shell dirname $(INCLUDE))
+INCDIRS	:= $(shell dirname $(INCLUDE) 2> /dev/null)
 
 ifeq ($(origin SOURCES), undefined)
 SOURCES	:= $(shell find -wholename "$(SRCDIR)/*$(SRCEXT)")
@@ -63,8 +80,13 @@ INSTALL_SOURCES	+= $(INCLUDE:$(INCDIR)/%=$(INSTALL_SRCDIR)/%)
 INSTALL_SOURCES	+= $(ADD_INSTALL_SOURCES:%=$(INSTALL_SRCDIR)/%)
 INSTALL_SRCDIRS	:= $(shell dirname $(INSTALL_SOURCES))
 
-$(OUT): $(OBJECTS) | $(DISTDIR)
+build: $(OUT)
+
+$(DISTDIR)/%.a: $(OBJECTS) | $(DISTDIR)
 	$(AR) $(ARFLAGS) $@ $^
+
+$(DISTDIR)/%.so: $(OBJECTS) $(LOCALIB) | $(DISTDIR)
+	$(CXX) $(LDFLAGS) $(OBJECTS) $(LOCALIB) $(LDLIBS) -o $@
 
 $(TEMPDIR)/%.o: $(SRCDIR)/%$(SRCEXT) | $(TEMPDIR)
 	@mkdir -p $(@D)
@@ -134,4 +156,4 @@ uninstall_all: uninstall uninstall_source
 -include $(DEPENDS)
 
 .PRECIOUS : $(OBJECTS)
-.PHONY : clean distclean uninstall uninstall_source uninstall_all
+.PHONY : build clean distclean uninstall uninstall_source uninstall_all
