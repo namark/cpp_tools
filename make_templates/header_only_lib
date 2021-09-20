@@ -1,9 +1,10 @@
 INSTALL_INCLUDE ?= include
 INSTALL_SOURCE ?= source
 
-ifneq ($(shell cat COPYRIGHT 2> /dev/null),)
-COPYRIGHT ?= COPYRIGHT
-COPYRIGHT_DEP = COPYRIGHT
+COPYRIGHT_FILE ?= ./COPYRIGHT
+ifneq ($(shell cat $(COPYRIGHT_FILE) 2> /dev/null),)
+COPYRIGHT ?= $(COPYRIGHT_FILE)
+COPYRIGHT_DEP = $(COPYRIGHT_FILE)
 else
 COPYRIGHT ?= /dev/null
 endif
