@@ -52,7 +52,10 @@ distclean: clean
 	@rmdir -p $(DISTDIR) 2> /dev/null || true
 	@echo All clean!
 
-install: $(TARGET) $(INCLUDE)
+install-includes: $(INCLUDE)
+	@echo Includes installed!
+
+install: $(TARGET) install-includes
 	@echo Install complete!
 
 $(INCDIR)/make_templates/%: ./make_templates/% $(COPYRIGHT)
@@ -69,9 +72,13 @@ $(BINDIR)/%: ./%.sh | $(BINDIR)
 $(BINDIR):
 	@mkdir -p $@
 
-uninstall:
-	-rm $(TARGET)
+uninstall-includes:
 	-rm $(INCLUDE)
+	@rmdir -p $(shell dirname $(INCLUDE)) 2> /dev/null || true
+	@echo Includes uninstalled!
+
+uninstall: uninstall-includes
+	-rm $(TARGET)
 	@rmdir -p $(BINDIR) 2> /dev/null || true
 	@rmdir -p $(shell dirname $(INCLUDE)) 2> /dev/null || true
 	@echo Uninstall complete!
@@ -79,4 +86,4 @@ uninstall:
 -include $(DEPENDS)
 
 .PRECIOUS : $(OBJECTS)
-.PHONY : clean distclean uninstall
+.PHONY : clean distclean uninstall uninstall-includes
